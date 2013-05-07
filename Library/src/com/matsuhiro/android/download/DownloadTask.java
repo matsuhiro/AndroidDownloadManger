@@ -248,15 +248,8 @@ public class DownloadTask extends AsyncTask<Void, Integer, Long> {
         mConnection.setRequestProperty("User-Agent", userAgent);
         mConnection.setRequestProperty("Accept-Encoding", "identity");
         if (mTempFile.exists()) {
-            mConnection.setRequestProperty("Range", "bytes=" + mTempFile.length() + "-");
-        }
-        Map<String, List<String>> properties = mConnection.getRequestProperties();
-        for (Entry<String, List<String>> entry : properties.entrySet()) {
-            String key = entry.getKey();
-            Log.v(TAG, "key : " + key);
-            for (String value : entry.getValue()) {
-                Log.v(TAG, "value : " + value + ", ");
-            }
+            mPreviousFileSize = mTempFile.length();
+            mConnection.setRequestProperty("Range", "bytes=" + mPreviousFileSize + "-");
         }
         mConnection.connect();
 
@@ -264,12 +257,17 @@ public class DownloadTask extends AsyncTask<Void, Integer, Long> {
         if (responseCode == HttpURLConnection.HTTP_NOT_FOUND) {
             throw new SpecifiedUrlIsNotFoundException("Not found : " + mUrlString);
         } else if (responseCode != HttpURLConnection.HTTP_OK
-                && responseCode == HttpURLConnection.HTTP_PARTIAL) {
+                && responseCode != HttpURLConnection.HTTP_PARTIAL) {
             String responseCodeString = Integer.toString(responseCode);
             throw new OtherHttpErrorException("http error code : " + responseCodeString, responseCodeString);
         }
 
+        boolean isRangeDownload = false;
         int length = mConnection.getContentLength();
+        if (responseCode == HttpURLConnection.HTTP_PARTIAL) {
+            length += mPreviousFileSize;
+            isRangeDownload = true;
+        }
 
         if (mFile.exists() && length == mFile.length()) {
             if (DEBUG) {
@@ -286,7 +284,7 @@ public class DownloadTask extends AsyncTask<Void, Integer, Long> {
             Log.i(null, "storage:" + storage + " totalSize:" + length);
         }
 
-        if (length - mTempFile.length() > storage) {
+        if (length - mPreviousFileSize > storage) {
             throw new NoMemoryException("SD card no memory.");
         }
 
@@ -296,7 +294,7 @@ public class DownloadTask extends AsyncTask<Void, Integer, Long> {
 
         publishProgress(0, length);
         
-        int bytesCopied = copy(inputStream, outputStream);
+        int bytesCopied = copy(inputStream, outputStream, isRangeDownload);
 
         if ((mPreviousFileSize + bytesCopied) != mTotalSize && mTotalSize != -1 && !mInterrupt) {
             throw new IOException("Download incomplete: " + bytesCopied + " != " + mTotalSize);
@@ -310,7 +308,7 @@ public class DownloadTask extends AsyncTask<Void, Integer, Long> {
 
     }
 
-    private int copy(InputStream input, RandomAccessFile output) throws IOException,
+    private int copy(InputStream input, RandomAccessFile output, boolean isRangeDownload) throws IOException,
             NetworkErrorException {
 
         if (input == null || output == null) {
@@ -329,7 +327,9 @@ public class DownloadTask extends AsyncTask<Void, Integer, Long> {
 
         try {
 
-            output.seek(output.length());
+            if (isRangeDownload) {
+                output.seek(output.length());
+            }
 
             while (!mInterrupt) {
                 n = in.read(buffer, 0, BUFFER_SIZE);
