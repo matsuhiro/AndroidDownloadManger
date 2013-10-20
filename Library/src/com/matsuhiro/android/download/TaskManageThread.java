@@ -1,7 +1,9 @@
 
 package com.matsuhiro.android.download;
 
+import android.annotation.TargetApi;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.util.Log;
 
 public class TaskManageThread<T extends AsyncTask<Params, ?, ?>, Params> extends Thread {
@@ -25,6 +27,7 @@ public class TaskManageThread<T extends AsyncTask<Params, ?, ?>, Params> extends
         mTaskQueue = reqTask;
     }
 
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     @Override
     public void run() {
         try {
@@ -35,7 +38,7 @@ public class TaskManageThread<T extends AsyncTask<Params, ?, ?>, Params> extends
                     if (mTaskManageCallback != null) {
                         p = mTaskManageCallback.getInputParameter(task);
                     }
-                    task.execute(p);
+                    task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, p);
                     Log.d(TAG, "task is execute");
                 }
             }

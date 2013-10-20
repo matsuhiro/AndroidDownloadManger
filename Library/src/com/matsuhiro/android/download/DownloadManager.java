@@ -9,9 +9,11 @@ import android.os.Message;
 
 import java.lang.ref.WeakReference;
 import java.net.MalformedURLException;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class DownloadManager {
+    public TreeMap<Long, Integer> mThreads = new TreeMap<Long, Integer>();
 
     private DownloadHandler mDownloadHandler;
 
@@ -19,7 +21,7 @@ public class DownloadManager {
 
     private TaskManageThread<DownloadTask, String> mTaskManageThread;
 
-    private static final int NUMBER_OF_THREADS_IN_SAME_TIME = 4;
+    private static final int NUMBER_OF_THREADS_IN_SAME_TIME = 20;
 
     private static final int ADD_TASK = 0;
 

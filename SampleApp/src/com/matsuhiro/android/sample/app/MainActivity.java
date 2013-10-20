@@ -5,6 +5,7 @@ import com.matsuhiro.android.download.DownloadManager;
 import com.matsuhiro.android.download.DownloadTask;
 import com.matsuhiro.android.download.DownloadTaskListener;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -50,13 +51,14 @@ public class MainActivity extends Activity {
         mPath = this.getExternalFilesDir(null).getAbsolutePath();
         
         mMgr = new DownloadManager(this, new Handler());
-        
+
         mStartTime = System.currentTimeMillis();
+        android.os.Debug.startMethodTracing("dnMgr50");
         for (int i = 0; i < mTotalCount; i++) {
             try {
                 DownloadTask task = new DownloadTask(this, mMgr, ImageUrls.mUrls[i], mPath, mDownloadTaskListener);
-                mMgr.addTask(task);
                 mQueuedNum++;
+                mMgr.addTask(task);
             } catch (MalformedURLException e) {
                 e.printStackTrace();
             }
@@ -77,11 +79,13 @@ public class MainActivity extends Activity {
             mSuccessNum++;
             updateText();
             if ((mSuccessNum + mErrorNum) == mQueuedNum) {
+                android.os.Debug.stopMethodTracing();
                 long endTime = System.currentTimeMillis();
                 long time = endTime - mStartTime;
                 Log.d("DownloadTest", "time : " + time);
+                int threadNum = mMgr.mThreads.keySet().size();
                 new AlertDialog.Builder(MainActivity.this)
-                .setMessage("" + time + " msec")
+                .setMessage("" + time + " msec, threadnum " +threadNum)
                 .show();
             }
         }

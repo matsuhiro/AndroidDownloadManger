@@ -84,6 +84,7 @@ public class DownloadTask extends AsyncTask<String, Integer, Long> {
         public void write(byte[] buffer, int offset, int count) throws IOException {
             super.write(buffer, offset, count);
             progress += count;
+            mTotalSize = progress;
             publishProgress(progress);
         }
     }
@@ -176,6 +177,9 @@ public class DownloadTask extends AsyncTask<String, Integer, Long> {
 
     @Override
     protected Long doInBackground(String... params) {
+        
+        long id = Thread.currentThread().getId();
+        mDownloadManager.mThreads.put(id, 1);
         long result = -1;
         try {
             result = download();
