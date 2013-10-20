@@ -21,11 +21,8 @@ import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 
-public class DownloadTask extends AsyncTask<Void, Integer, Long> {
+public class DownloadTask extends AsyncTask<String, Integer, Long> {
 
     public final static int TIME_OUT = 30000;
 
@@ -44,6 +41,10 @@ public class DownloadTask extends AsyncTask<Void, Integer, Long> {
     private File mTempFile;
 
     private String mUrlString;
+
+    private String mFileName;
+
+    private String mPath;
 
     private URL mURL;
 
@@ -69,6 +70,8 @@ public class DownloadTask extends AsyncTask<Void, Integer, Long> {
 
     private boolean mInterrupt = false;
 
+    private DownloadManager mDownloadManager;
+
     private final class ProgressReportingRandomAccessFile extends RandomAccessFile {
         private int progress = 0;
 
@@ -85,36 +88,57 @@ public class DownloadTask extends AsyncTask<Void, Integer, Long> {
         }
     }
 
-    public DownloadTask(Context context, String url, String path) throws MalformedURLException {
-        this(context, url, path, null);
+    public DownloadTask(Context context, DownloadManager dnMgr, String url, String path) throws MalformedURLException {
+        this(context, dnMgr, url, path, null);
     }
 
-    public DownloadTask(Context context, String url, String path, DownloadTaskListener listener)
+    public DownloadTask(Context context, DownloadManager dnMgr, String url, String path, DownloadTaskListener listener)
             throws MalformedURLException {
-        this(context, url, null, path, listener);
+        this(context, dnMgr, url, null, path, listener);
     }
 
-    public DownloadTask(Context context, String url, String name, String path,
+    public DownloadTask(Context context, DownloadManager dnMgr, String url, String name, String path,
             DownloadTaskListener listener) throws MalformedURLException {
         super();
         this.mUrlString = url;
         this.mListener = listener;
-        String fileName;
         this.mURL = new URL(url);
         if (TextUtils.isEmpty(name)) {
-            fileName = new File(mURL.getFile()).getName();
+            mFileName = new File(mURL.getFile()).getName();
         } else {
-            fileName = name;
+            mFileName = name;
         }
-        this.mFile = new File(path, fileName);
-        this.mTempFile = new File(path, fileName + TEMP_SUFFIX);
+        this.mFile = new File(path, mFileName);
+        this.mTempFile = new File(path, mFileName + TEMP_SUFFIX);
         this.mContext = context;
+        mPath = path;
+        mDownloadManager = dnMgr;
+    }
+
+    public Context getContext() {
+        return this.mContext;
     }
 
     public String getUrl() {
         return mUrlString;
     }
 
+    public String getPath() {
+        return this.mPath;
+    }
+
+    public URL getURL() {
+        return mURL;
+    }
+
+    public String getFilePath() {
+        return mFile.getAbsolutePath();
+    }
+    
+    public String getFileName() {
+        return mFile.getName();
+    }
+    
     public boolean isInterrupt() {
         return mInterrupt;
     }
@@ -151,7 +175,7 @@ public class DownloadTask extends AsyncTask<Void, Integer, Long> {
     }
 
     @Override
-    protected Long doInBackground(Void... params) {
+    protected Long doInBackground(String... params) {
         long result = -1;
         try {
             result = download();
@@ -206,17 +230,20 @@ public class DownloadTask extends AsyncTask<Void, Integer, Long> {
 
         if (result == -1 || mInterrupt || mError != null) {
             if (DEBUG && mError != null) {
-                Log.v(TAG, "Download failed." + mError.getMessage());
+                Log.v(TAG, "Download failed." + mError.getMessage() + ", url " + mUrlString);
             }
             if (mListener != null) {
                 mListener.errorDownload(this, mError);
             }
+            mDownloadManager.notifyCompleted();
             return;
         }
         // finish download
         mTempFile.renameTo(mFile);
-        if (mListener != null)
+        if (mListener != null) {
             mListener.finishDownload(this);
+        }
+        mDownloadManager.notifyCompleted();
     }
 
     @Override
@@ -319,7 +346,7 @@ public class DownloadTask extends AsyncTask<Void, Integer, Long> {
 
         BufferedInputStream in = new BufferedInputStream(input, BUFFER_SIZE);
         if (DEBUG) {
-            Log.v(TAG, "length" + output.length());
+            Log.v(TAG, "length " + output.length());
         }
 
         int count = 0, n = 0;
