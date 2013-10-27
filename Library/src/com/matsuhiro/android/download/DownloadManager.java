@@ -21,7 +21,7 @@ public class DownloadManager {
 
     private TaskManageThread<DownloadTask, String> mTaskManageThread;
 
-    private static final int NUMBER_OF_THREADS_IN_SAME_TIME = 20;
+    private static final int NUMBER_OF_THREADS_IN_SAME_TIME = 100;
 
     private static final int ADD_TASK = 0;
 

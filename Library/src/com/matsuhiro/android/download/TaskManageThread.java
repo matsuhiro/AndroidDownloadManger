@@ -38,7 +38,7 @@ public class TaskManageThread<T extends AsyncTask<Params, ?, ?>, Params> extends
                     if (mTaskManageCallback != null) {
                         p = mTaskManageCallback.getInputParameter(task);
                     }
-                    task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, p);
+                    task.execute(p);
                     Log.d(TAG, "task is execute");
                 }
             }
