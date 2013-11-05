@@ -110,7 +110,9 @@ public class StorageUtils {
 	}
 	
 	public static String[] getAlternateStorageDirectories() {
-		return new String[] { "/emmc",
+		return new String[] {
+				"/mnt/sdcard",
+				"/emmc",
 				"/mnt/sdcard/external_sd",
 				"/mnt/external_sd",
 				"/sdcard/sd",
@@ -123,6 +125,7 @@ public class StorageUtils {
 				"/mnt/extSdCard",
 				"/mnt/extsd",
 				"/mnt/usb_storage",
+				"/extSdCard",
 				"/mnt/extSdCard",
 				"/mnt/UsbDriveA",
 				"/mnt/UsbDriveB", };
@@ -141,7 +144,7 @@ public class StorageUtils {
 		}
 		
 		String[] alt_storages = getAlternateStorageDirectories();		
-		for (int i = 0; i < storages.length; i++) {
+		for (int i = 0; i < alt_storages.length; i++) {
 			if (matchFound(path, alt_storages[i])) {
 				Log.d(TAG, "storageInUse: " + alt_storages[i]);
 				return alt_storages[i];
