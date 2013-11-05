@@ -310,13 +310,15 @@ public class DownloadTask extends AsyncTask<String, Integer, Long> {
         /*
          * check memory
          */
-        long storage = StorageUtils.getAvailableStorage();
+        String mFileStorage = StorageUtils.findStoragePathForGivenFile(mFile);
+        long storageSpace = StorageUtils.getAvailableStorage(mFileStorage);
+        
         if (DEBUG) {
-            Log.i(null, "storage:" + storage + " totalSize:" + length);
+            Log.v(TAG, "storageSpace: " + storageSpace + "; total file size: " + length);
         }
 
-        if (length - mPreviousFileSize > storage) {
-            throw new NoMemoryException("SD card no memory.");
+        if (length - mPreviousFileSize > storageSpace) {
+            throw new NoMemoryException("Not enough free space on destination storage.");
         }
 
         RandomAccessFile outputStream = new ProgressReportingRandomAccessFile(mTempFile, "rw");
