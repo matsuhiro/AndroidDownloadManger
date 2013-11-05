@@ -22,6 +22,7 @@ public class StorageUtils {
 
 	@SuppressWarnings("deprecation")
 	public static long getAvailableStorage(String storageDirectory) {
+
         try {
             StatFs stat = new StatFs(storageDirectory);
             long avaliableSize = ((long) stat.getAvailableBlocks() * (long) stat.getBlockSize());
@@ -101,24 +102,52 @@ public class StorageUtils {
         return rv.toArray(new String[rv.size()]);
     }
     
-	private static String findMatch(String text, String regEx) {
+	private static boolean matchFound(String text, String regEx) {
 		Pattern pattern = Pattern.compile(regEx);
 		Matcher matcher = pattern.matcher(text);
-		if (matcher.find()) return matcher.group();
-		return "";
+		if (matcher.find()) return true;
+		return false;
+	}
+	
+	public static String[] getAlternateStorageDirectories() {
+		return new String[] { "/emmc",
+				"/mnt/sdcard/external_sd",
+				"/mnt/external_sd",
+				"/sdcard/sd",
+				"/mnt/sdcard/bpemmctest",
+				"/mnt/sdcard/_ExternalSD",
+				"/mnt/sdcard-ext",
+				"/mnt/Removable/MicroSD",
+				"/Removable/MicroSD",
+				"/mnt/external1",
+				"/mnt/extSdCard",
+				"/mnt/extsd",
+				"/mnt/usb_storage",
+				"/mnt/extSdCard",
+				"/mnt/UsbDriveA",
+				"/mnt/UsbDriveB", };
 	}
 	
 	public static String findStoragePathForGivenFile(File file) {
-		String[] storages = getStorageDirectories();
+		
 		String path = file.getAbsolutePath();
 		
-		String storageInUse = null;
-		
+		String[] storages = getStorageDirectories();		
 		for (int i = 0; i < storages.length; i++) {
-			String test = findMatch(path, storages[i]);
-			if (!test.equals("")) storageInUse = test;
+			if (matchFound(path, storages[i])) {
+				Log.d(TAG, "storageInUse: " + storages[i]);
+				return storages[i];
+			}
 		}
-		Log.d(TAG, "storageInUse: " + storageInUse);
-		return storageInUse;
+		
+		String[] alt_storages = getAlternateStorageDirectories();		
+		for (int i = 0; i < storages.length; i++) {
+			if (matchFound(path, alt_storages[i])) {
+				Log.d(TAG, "storageInUse: " + alt_storages[i]);
+				return alt_storages[i];
+			}
+		}
+		
+		return Environment.getExternalStorageDirectory().getPath();
 	}
 }
